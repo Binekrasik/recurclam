@@ -4,6 +4,7 @@ import { readdirSync, openSync, mkdirSync, writeSync, existsSync, rmSync } from 
 // configuration
 const depth = 2 // recursiveness depth
 const processLimit = 4 // maximum amount of active clamscan processes at once
+const startDirectory = '/' // directory which the recursion will be begun from
 const excludeDirs = [ // directories to exclude from scanning
     '/dev',
     '/proc',
@@ -22,7 +23,7 @@ const getDirs = ( path: string ): string[] | null => {
 
 console.log( `Scanning for directories (depth = ${ depth })...` )
 
-let directories: Array< string[] > = [[ '/' ]] // start with root directory
+let directories: Array< string[] > = [[ startDirectory ]] // start recursing from the configured directory
 for ( let i = 0; i < depth; i++ ) {
     // advance in depth
     let tempDirs: string[] = []
