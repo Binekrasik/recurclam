@@ -3,7 +3,7 @@ import { readdirSync, openSync, mkdirSync, writeSync, existsSync, rmSync } from 
 
 // configuration
 const depth = 2 // recursiveness depth
-const processLimit = 4 // maximum amount of active clamscan processes at once
+const processLimit = 4 // maximum amount of active clamscan processes at once. Mind that each clamscan process uses ~1.5GB of RAM
 const startDirectory = '/' // directory which the recursion will be begun from
 const excludeDirs = [ // directories to exclude from scanning
     '/dev',
@@ -29,13 +29,13 @@ for ( let i = 0; i < depth; i++ ) {
     let tempDirs: string[] = []
     directories[ i ]?.forEach( dir => {
         if ( excludeDirs.includes( dir ) ) {
-            console.warn( `Skipping ${ dir }: ${ dir } is listed as excluded.` )
+            console.warn( `Skipping '${ dir }': '${ dir }' is listed as excluded.` )
             return
         }
 
         let dirs = getDirs( dir )
         if ( !dirs ) {
-            console.warn( `Skipping ${ dir }: couldn't read ${ dir }.` )
+            console.warn( `Skipping '${ dir }': couldn't open '${ dir }'.` )
             return
         }
 
@@ -45,8 +45,8 @@ for ( let i = 0; i < depth; i++ ) {
     directories.push( tempDirs )
 }
 
-console.log( directories )
-console.log( `Collected directories. Running scans...` )
+// Yeaaah... forgive me please
+console.log( `Collected ${ function () { let amount = 0; directories.forEach( dirs => amount += dirs.length ); return amount }() } directories. Preparing for scanning...\n` )
 
 if ( existsSync( '/tmp/recurclam' ) ) {
     console.warn( `Removing existing '/tmp/recurclam/' log directory.` )
@@ -111,6 +111,7 @@ const spawnNextWorker = () => {
 
 const advanceScans = () => {
     console.log( `Process limit is set to ${ processLimit }.` )
+    console.log( 'Started scanning.\n' )
 
     for ( let i = 0; i < processLimit; i++ )
         spawnNextWorker()
@@ -119,11 +120,15 @@ const advanceScans = () => {
 advanceScans()
 
 const killWorkers = () => {
-    console.log( 'Terminating all workers.' )
+    console.log( 'Terminating all workers.\n' )
     activeWorkers.forEach( worker => worker.kill( 'SIGKILL' ) )
 }
 
 process.on( 'SIGINT', () => {
-    console.log( 'Received SIGINT.' )
+    console.log( '\n\nReceived an interrupt signal.' )
     killWorkers()
+})
+
+process.on( 'exit', () => {
+    console.log( `\nAll workers finished. Logs are located in '/tmp/recurclam/'.` )
 })
